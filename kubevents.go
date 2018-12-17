@@ -50,23 +50,18 @@ func handleRequests(wg *sync.WaitGroup) {
 }
 
 func jsonToweb(w http.ResponseWriter, r *http.Request) {
-	finalJson["status"] = "running"
-	finalJson["error"] = "null"
+	finalJson["data"] = datas
 	json.NewEncoder(w).Encode(finalJson)
 }
 
 func passData(eName, eReason, eDiff string) {
-
 	countID++
-
 	datas = append(datas, eventsData{
 		ID:        countID,
 		Name:      eName,
 		Reason:    eReason,
 		Timestamp: eDiff,
 	})
-
-	finalJson["data"] = datas
 }
 
 func getDeployments() {
@@ -177,11 +172,11 @@ func getKevents(wg *sync.WaitGroup) {
 			log.Printf("Event added, name: %s, reason: %s, timestamp: %s\n", ke.Name, ke.Reason, ke.CreationTimestamp)
 			t2 := ke.CreationTimestamp
 			diff := t2.Sub(t1)
-			if diff < 0 {
-				diff = 0
+			// webserver considers only events which appeared after the script was run (diff > 0)
+			if diff > 0 {
+				sDiff := time.Time{}.Add(diff)
+				passData(ke.Name, ke.Reason, sDiff.Format("15:04:05"))
 			}
-			sDiff := time.Time{}.Add(diff)
-			passData(ke.Name, ke.Reason, sDiff.Format("15:04:05"))
 
 		case watch.Modified:
 			log.Printf("Event modified, name: %s, reason: %s\n", ke.Name, ke.Reason)
@@ -195,6 +190,8 @@ func getKevents(wg *sync.WaitGroup) {
 }
 
 func main() {
+	finalJson["status"] = "running"
+	finalJson["error"] = "null"
 	var wg sync.WaitGroup
 	wg.Add(2)
 	go handleRequests(&wg)
