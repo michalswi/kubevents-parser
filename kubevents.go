@@ -39,6 +39,7 @@ const (
 var countID int
 var finalJson = make(map[string]interface{})
 var datas []eventsData
+var initNamespace = "default"
 
 func handleRequests(wg *sync.WaitGroup) {
 	r := mux.NewRouter()
@@ -64,29 +65,63 @@ func passData(eName, eReason, eDiff string) {
 	})
 }
 
-func getDeployments() {
-	// add to import -> apiv1 "k8s.io/api/core/v1"
+func getKubeconfig(runOutsideKcluster bool) (*kubernetes.Clientset, error) {
 
-	// kubeconfig
-	// 1, flags
+	// option 1
 	var kubeconfig *string
-	if home := homedir.HomeDir(); home != "" {
-		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
+	// if homeDir := homedir.HomeDir(); homeDir != "" {
+	homeDir := homedir.HomeDir()
+	if homeDir != "" {
+		kubeconfig = flag.String("kubeconfig", filepath.Join(homeDir, ".kube", "config"),
+			"(optional) absolute path to the kubeconfig file")
 	} else {
 		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
 	}
 	flag.Parse()
-	// 2, evn
-	// kubeconfig := os.Getenv("KUBECONFIG")
 
 	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return kubernetes.NewForConfig(config)
+
+	// option 2
+	// kubeConfigLocation := ""
+
+	// if runOutsideKcluster == true {
+	// 	homeDir := os.Getenv("HOME")
+	// 	kubeConfigLocation = filepath.Join(homeDir, ".kube", "config")
+	// }
+
+	// // use the current context in kubeconfig
+	// config, err := clientcmd.BuildConfigFromFlags("", kubeConfigLocation)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// return kubernetes.NewForConfig(config)
+
+}
+
+func getDeployments() {
+	// add to import -> apiv1 "k8s.io/api/core/v1"
+
+	// kubeconfig related
+	// TODO - move to separate function
+	// --------------------------------------
+	// Use ~/.kube/config rather than in cluster configuration
+	// option 1 from getKubeconfig() DOESN'T care about 'runOutsideKcluster' !!
+	// option 2 from getKubeconfig() REQUIRES 'go run kubevents --run-outside-k-cluster 1'
+	runOutsideKcluster := flag.Bool("run-outside-k-cluster", false, "Set this flag when running outside of the cluster.")
+	flag.Parse()
+	// Create clientset to interact with the kubernetes cluster
+	clientset, err := getKubeconfig(*runOutsideKcluster)
 	if err != nil {
 		panic(err)
 	}
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err)
-	}
+	// --------------------------------------
 
 	// List Deployments
 	// https://github.com/kubernetes/client-go/blob/master/examples/create-update-delete-deployment/main.go
@@ -107,33 +142,44 @@ func getKevents(wg *sync.WaitGroup) {
 
 	t1 := time.Now()
 
-	var kubeconfig *string
-	if home := homedir.HomeDir(); home != "" {
-		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
-	} else {
-		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
-	}
-	flag.Parse()
+	// NOT NEEDED - moved to getKubeconfig() - instead I used 'kubeconfig related'
+	// --------------------------------------
+	// var kubeconfig *string
+	// if home := homedir.HomeDir(); home != "" {
+	// 	kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
+	// } else {
+	// 	kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
+	// }
+	// flag.Parse()
+	// config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// clientset, err := kubernetes.NewForConfig(config)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// --------------------------------------
 
-	//1 code run outside of a cluster
-	// clientcmd.BuildConfigFromFlags("", configFile)
-	//2 code run in a cluster/the client code is destined to run in a pod
-	// clientcmd.BuildConfigFromFlags("", "")
-	//3 package rest to create the configuration from cluster information directly
-	// rest.InClusterConfig()
-	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+	// kubeconfig related
+	// TODO - move to separate function
+	// --------------------------------------
+	// Use ~/.kube/config rather than in cluster configuration
+	// option 1 from getKubeconfig() DOESN'T care about 'runOutsideKcluster' !!
+	// option 2 from getKubeconfig() REQUIRES 'go run kubevents --run-outside-k-cluster 1'
+	runOutsideKcluster := flag.Bool("run-outside-k-cluster", false, "Set this flag when running outside of the cluster.")
+	flag.Parse()
+	// Create clientset to interact with the kubernetes cluster
+	clientset, err := getKubeconfig(*runOutsideKcluster)
 	if err != nil {
 		panic(err)
 	}
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err)
-	}
+	// --------------------------------------
 
 	// List Events
 	var ns string
-	// --all-namespaces -> ""
-	flag.StringVar(&ns, "namespace", "default", "a namespace")
+	// if "--all-namespaces" then change "initNamespace" to empty string -> ""
+	flag.StringVar(&ns, "namespace", initNamespace, "a namespace")
 	flag.Parse()
 
 	api := clientset.CoreV1()
@@ -153,8 +199,7 @@ func getKevents(wg *sync.WaitGroup) {
 	// }
 
 	// watcher
-	watcher, err := getKevents.
-		Watch(listOptions)
+	watcher, err := getKevents.Watch(listOptions)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -53,3 +53,9 @@ $ curl localhost:5000/api/v1/log | jq
   "status": "running"
 }
 ```
+
+**Additional** but not used:  
+related to `getKubeconfig()` function, **option 2**.
+```sh
+$ go run kubevents.go --run-outside-k-cluster true
+```
