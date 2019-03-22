@@ -176,18 +176,19 @@ func getKevents(wg *sync.WaitGroup) {
 	}
 	// --------------------------------------
 
-	// List Events
+	// define namespace
 	var ns string
 	// if "--all-namespaces" then change "initNamespace" to empty string -> ""
 	flag.StringVar(&ns, "namespace", initNamespace, "a namespace")
 	flag.Parse()
 
 	api := clientset.CoreV1()
-	listOptions := metav1.ListOptions{}
 
+	// init
+	listOptions := metav1.ListOptions{}
 	getKevents := api.Events(ns)
 
-	// DISPLAY all events at once
+	// display all events at once
 	// listevent, err := getKevents.List(listOptions)
 	// if err != nil {
 	// 	panic(err)
