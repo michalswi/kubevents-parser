@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"sync"
 	"time"
@@ -18,7 +19,6 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/util/homedir"
 )
 
 // https://github.com/kubernetes/client-go
@@ -67,41 +67,41 @@ func passData(eName, eReason, eDiff string) {
 
 func getKubeconfig(runOutsideKcluster bool) (*kubernetes.Clientset, error) {
 
-	// option 1
-	var kubeconfig *string
-	// if homeDir := homedir.HomeDir(); homeDir != "" {
-	homeDir := homedir.HomeDir()
-	if homeDir != "" {
-		kubeconfig = flag.String("kubeconfig", filepath.Join(homeDir, ".kube", "config"),
-			"(optional) absolute path to the kubeconfig file")
-	} else {
-		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
-	}
-	flag.Parse()
-
-	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return kubernetes.NewForConfig(config)
-
-	// option 2
-	// kubeConfigLocation := ""
-
-	// if runOutsideKcluster == true {
-	// 	homeDir := os.Getenv("HOME")
-	// 	kubeConfigLocation = filepath.Join(homeDir, ".kube", "config")
+	// // option 1
+	// var kubeconfig *string
+	// // if homeDir := homedir.HomeDir(); homeDir != "" {
+	// homeDir := homedir.HomeDir()
+	// if homeDir != "" {
+	// 	kubeconfig = flag.String("kubeconfig", filepath.Join(homeDir, ".kube", "config"),
+	// 		"(optional) absolute path to the kubeconfig file")
+	// } else {
+	// 	kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
 	// }
+	// flag.Parse()
 
-	// // use the current context in kubeconfig
-	// config, err := clientcmd.BuildConfigFromFlags("", kubeConfigLocation)
+	// config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+
 	// if err != nil {
 	// 	return nil, err
 	// }
 
 	// return kubernetes.NewForConfig(config)
+
+	// option 2
+	kubeConfigLocation := ""
+
+	if runOutsideKcluster == true {
+		homeDir := os.Getenv("HOME")
+		kubeConfigLocation = filepath.Join(homeDir, ".kube", "config")
+	}
+
+	// use the current context in kubeconfig
+	config, err := clientcmd.BuildConfigFromFlags("", kubeConfigLocation)
+	if err != nil {
+		return nil, err
+	}
+
+	return kubernetes.NewForConfig(config)
 
 }
 

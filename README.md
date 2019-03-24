@@ -11,7 +11,7 @@ $ go get k8s.io/apimachinery/...
 
 **Run**:  
 ```sh
-# it displays already existing events from 'default' namespace
+# it displays already existing events from 'default' namespace, setup as a 'var initNamespace'
 $ go run kubevents.go
 Start..
 2018/12/17 19:44:49 Event added, name: hello-app-5c7477d7b7-94brw.1571326091adb1c9, reason: Scheduled, timestamp: 2018-12-17 19:32:17 +0100 CET
@@ -54,8 +54,8 @@ $ curl localhost:5000/api/v1/log | jq
 }
 ```
 
-**Additional** but not used:  
-related to `getKubeconfig()` function, **option 2**.
+**Additional**  
+not used, related to `getKubeconfig()` function, **option 2**.
 ```sh
 $ go run kubevents.go --run-outside-k-cluster true
 ```
