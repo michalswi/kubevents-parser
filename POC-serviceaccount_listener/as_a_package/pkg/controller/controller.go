@@ -17,7 +17,6 @@ import (
 
 func GetKevents(kclient *kubernetes.Clientset) {
 	clientset := kclient
-	// vars
 	initNamespace := "default"
 
 	// clientset REQUIRED !

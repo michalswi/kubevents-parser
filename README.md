@@ -1,5 +1,8 @@
 
-Simple webserver to monitor k8s events.
+Simple webserver to monitor k8s events.  
+
+You can run it either locally or on k8s (last description).
+
 
 **Prerequisites**:  
 ```sh
@@ -54,8 +57,26 @@ $ curl localhost:5000/api/v1/log | jq
 }
 ```
 
+
 **Additional**  
-not used, related to `getKubeconfig()` function, **option 2**.
+[optional] Related to `getKubeconfig()` function, look for **option 2**.
 ```sh
 $ go run kubevents.go --run-outside-k-cluster true
+```
+
+
+**Run on kubernetes cluster**:   
+[**optional**] You can create your own namespace and change `default` namespace in `kubevents.go`.  
+[**must**] Prepare binary and docker image and push it to some registry.  
+
+```sh
+$ go build -a -ldflags '-w -s' -installsuffix cgo -o kubevents kubevents.go
+$ docker build -t local/kubevents:0.0.1 
+```
+
+```sh
+$ cd deploy/
+$ kubectl apply -f rbac.yml -n <your_namespace>
+$ kubectl apply -f pod.yml -n <your_namespace> 
+$ kubectl apply -f svc.yml -n <your_namespace>
 ```

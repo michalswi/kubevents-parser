@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kubevents-sa
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: kubevents-role
+rules:
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["get", "watch", "list"]
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: kubevents-role-binding
+subjects:
+  - kind: "ServiceAccount"
+    name: kubevents-sa
+roleRef:
+  kind: Role
+  name: kubevents-role
+  apiGroup: rbac.authorization.k8s.io    

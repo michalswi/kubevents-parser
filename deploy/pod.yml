@@ -1,0 +1,14 @@
+kind: Pod
+apiVersion: v1
+metadata:
+  name: kubevents-pod
+  labels:
+    app: kubevents
+spec:
+  serviceAccountName: kubevents-sa
+  containers:
+  - name: kubevents
+    image: local/kubevents:0.0.1
+    imagePullPolicy: Always
+    ports:
+    - containerPort: 5000

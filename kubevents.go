@@ -166,7 +166,7 @@ func getKevents(wg *sync.WaitGroup) {
 	// --------------------------------------
 	// Use ~/.kube/config rather than in cluster configuration
 	// option 1 from getKubeconfig() DOESN'T care about 'runOutsideKcluster' !!
-	// option 2 from getKubeconfig() REQUIRES 'go run kubevents --run-outside-k-cluster 1'
+	// option 2 from getKubeconfig() REQUIRES 'go run kubevents --run-outside-k-cluster true'
 	runOutsideKcluster := flag.Bool("run-outside-k-cluster", false, "Set this flag when running outside of the cluster.")
 	flag.Parse()
 	// Create clientset to interact with the kubernetes cluster
@@ -174,6 +174,7 @@ func getKevents(wg *sync.WaitGroup) {
 	if err != nil {
 		panic(err)
 	}
+	fmt.Printf("%+v\n", clientset)
 	// --------------------------------------
 
 	// define namespace
@@ -182,13 +183,12 @@ func getKevents(wg *sync.WaitGroup) {
 	flag.StringVar(&ns, "namespace", initNamespace, "a namespace")
 	flag.Parse()
 
+	// init, clientset REQUIRED!
 	api := clientset.CoreV1()
-
-	// init
 	listOptions := metav1.ListOptions{}
-	getKevents := api.Events(ns)
 
 	// display all events at once
+	// getKevents := api.Events(ns)
 	// listevent, err := getKevents.List(listOptions)
 	// if err != nil {
 	// 	panic(err)
@@ -199,8 +199,8 @@ func getKevents(wg *sync.WaitGroup) {
 	// 		d.Name, d.Namespace, d.Reason, d.Message)
 	// }
 
-	// watcher
-	watcher, err := getKevents.Watch(listOptions)
+	// enable watcher for events
+	watcher, err := api.Events(ns).Watch(listOptions)
 	if err != nil {
 		log.Fatal(err)
 	}
