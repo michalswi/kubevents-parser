@@ -176,21 +176,17 @@ func deleteRbac(kclient *kubernetes.Clientset, saName string, saNamespace string
 	roleName := fmt.Sprintf("%s-r", saName)
 	roleBindName := fmt.Sprintf("%s-rb", saName)
 
-	// https://github.com/terraform-providers/terraform-provider-kubernetes/pull/235/files#diff-902059156a92c932b74560c2fd94180bR145
-	clientset.RbacV1().Roles(namespaceName).Delete(roleName, &metav1.DeleteOptions{})
-	// err = clientset.RbacV1().Roles(namespaceName).Delete(roleName, &metav1.DeleteOptions{})
-	// if err != nil {
-	// 	log.Printf("Can't delete role: %s, from namespace: %s", roleName, namespaceName)
-	// 	return
-	// }
+	err := clientset.RbacV1().Roles(namespaceName).Delete(roleName, &metav1.DeleteOptions{})
+	if err != nil {
+		log.Printf("Can't delete role: %s, from namespace: %s", roleName, namespaceName)
+	}
 	log.Printf("Role: %s, deleted from namespace: %s", roleName, namespaceName)
 
-	clientset.RbacV1().RoleBindings(namespaceName).Delete(roleBindName, &metav1.DeleteOptions{})
-	// err = clientset.RbacV1().RoleBindings(namespaceName).Delete(roleBindName, &metav1.DeleteOptions{})
-	// if err != nil {
-	// 	log.Printf("Can't delete role binding: %s, from namespace: %s", roleBindName, namespaceName)
-	// 	return
-	// }
+	// if err := clientset.RbacV1().RoleBindings(namespaceName).Delete(roleBindName, &metav1.DeleteOptions{}); err != nil {
+	err = clientset.RbacV1().RoleBindings(namespaceName).Delete(roleBindName, &metav1.DeleteOptions{})
+	if err != nil {
+		log.Printf("Can't delete role binding: %s, from namespace: %s", roleBindName, namespaceName)
+	}
 	log.Printf("Role binding: %s, deleted from namespace: %s", roleBindName, namespaceName)
 }
 
