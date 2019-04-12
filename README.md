@@ -1,27 +1,40 @@
 
-**Simple webserver to monitor k8s events** 
+### Simple webserver to monitor k8s events 
 
-You can run it either locally or on k8s (last description).
+You can run it either on k8s or locally.
 
-
-**Prerequisites**  
+#### Prerequisites
 ```sh
 $ go get github.com/gorilla/mux
-$ go get k8s.io/client-go/...
 $ go get k8s.io/api/...
+$ go get k8s.io/client-go/...
 $ go get k8s.io/apimachinery/...
 ```
 
-**Run**  
-it displays already existing events from `default` namespace, setup in code as a `var initNamespace`
+#### Run on kubernetes cluster
+it displays already existing events from `default` namespace, setup in code as a `var initNamespace`.  
+[**optional**] You can create your own namespace and change `default` namespace in `kubevents.go`.  
+[**must**] Prepare binary and docker image and push it to some registry.  
+
 ```sh
-$ go run kubevents.go
-Start..
-2018/12/17 19:44:49 Event added, name: hello-app-5c7477d7b7-94brw.1571326091adb1c9, reason: Scheduled, timestamp: 2018-12-17 19:32:17 +0100 CET
-2018/12/17 19:44:49 Event added, name: hello-app-5c7477d7b7-94brw.15713260a3891339, reason: SuccessfulMountVolume, timestamp: 2018-12-17 19:32:17 +0100 CET
+$ go build -a -ldflags '-w -s' -installsuffix cgo -o kubevents kubevents.go
+$ docker build -t local/kubevents:0.0.1 .
+
+$ cd deploy/
+$ kubectl apply -f rbac.yml
+$ kubectl apply -f pod.yml
+$ kubectl apply -f svc.yml
 ```
 
-**Check**
+#### Run locally
+[**optional**] Related to `getKubeconfig()` function, look for **option 2**.
+```sh
+$ ./kubevents --run-outside-k-cluster true
+Start..
+2018/12/17 19:44:49 Event added, name: hello-app-5c7477d7b7-94brw.1571326091adb1c9, reason: Scheduled, timestamp: 2018-12-17 19:32:17 +0100 CET
+```
+
+#### Check
 ```sh
 # webserver considers only events which appeared after the script was run
 $ curl localhost:5000/api/v1/log | jq
@@ -55,26 +68,6 @@ $ curl localhost:5000/api/v1/log | jq
   "error": "null",
   "status": "running"
 }
-```
 
-
-**Additional**  
-[**optional**] Related to `getKubeconfig()` function, look for **option 2**.
-```sh
-$ go run kubevents.go --run-outside-k-cluster true
-```
-
-
-**Run on kubernetes cluster**   
-[**optional**] You can create your own namespace and change `default` namespace in `kubevents.go`.  
-[**must**] Prepare binary and docker image and push it to some registry.  
-
-```sh
-$ go build -a -ldflags '-w -s' -installsuffix cgo -o kubevents kubevents.go
-$ docker build -t local/kubevents:0.0.1 .
-
-$ cd deploy/
-$ kubectl apply -f rbac.yml
-$ kubectl apply -f pod.yml
-$ kubectl apply -f svc.yml
+$ kubectl delete deployments hello-app
 ```

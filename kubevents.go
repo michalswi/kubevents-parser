@@ -41,6 +41,16 @@ var finalJson = make(map[string]interface{})
 var datas []eventsData
 var initNamespace = "default"
 
+func main() {
+	finalJson["status"] = "running"
+	finalJson["error"] = "null"
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go handleRequests(&wg)
+	go getKevents(&wg)
+	wg.Wait()
+}
+
 func handleRequests(wg *sync.WaitGroup) {
 	r := mux.NewRouter()
 	myRouter := r.PathPrefix(apiVersion).Subrouter()
@@ -67,7 +77,7 @@ func passData(eName, eReason, eDiff string) {
 
 func getKubeconfig(runOutsideKcluster bool) (*kubernetes.Clientset, error) {
 
-	// // option 1
+	// // option 1 - TODO  - check if it works on k8s
 	// var kubeconfig *string
 	// // if homeDir := homedir.HomeDir(); homeDir != "" {
 	// homeDir := homedir.HomeDir()
@@ -87,7 +97,7 @@ func getKubeconfig(runOutsideKcluster bool) (*kubernetes.Clientset, error) {
 
 	// return kubernetes.NewForConfig(config)
 
-	// option 2
+	// option 2 - it works on k8s
 	kubeConfigLocation := ""
 
 	if runOutsideKcluster == true {
@@ -102,38 +112,6 @@ func getKubeconfig(runOutsideKcluster bool) (*kubernetes.Clientset, error) {
 	}
 
 	return kubernetes.NewForConfig(config)
-
-}
-
-func getDeployments() {
-	// add to import -> apiv1 "k8s.io/api/core/v1"
-
-	// kubeconfig related
-	// TODO - move to separate function
-	// --------------------------------------
-	// Use ~/.kube/config rather than in cluster configuration
-	// option 1 from getKubeconfig() DOESN'T care about 'runOutsideKcluster' !!
-	// option 2 from getKubeconfig() REQUIRES 'go run kubevents --run-outside-k-cluster 1'
-	runOutsideKcluster := flag.Bool("run-outside-k-cluster", false, "Set this flag when running outside of the cluster.")
-	flag.Parse()
-	// Create clientset to interact with the kubernetes cluster
-	clientset, err := getKubeconfig(*runOutsideKcluster)
-	if err != nil {
-		panic(err)
-	}
-	// --------------------------------------
-
-	// List Deployments
-	// https://github.com/kubernetes/client-go/blob/master/examples/create-update-delete-deployment/main.go
-	deploymentsClient := clientset.AppsV1().Deployments(apiv1.NamespaceDefault)
-	fmt.Printf("Listing deployments in namespace %q:\n", apiv1.NamespaceDefault)
-	list, err := deploymentsClient.List(metav1.ListOptions{})
-	if err != nil {
-		panic(err)
-	}
-	for _, d := range list.Items {
-		fmt.Printf(" * %s (%d replicas)\n", d.Name, *d.Spec.Replicas)
-	}
 
 }
 
@@ -174,7 +152,8 @@ func getKevents(wg *sync.WaitGroup) {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("%+v\n", clientset)
+	// print kubeconfig..
+	// fmt.Printf("%+v\n", clientset)
 	// --------------------------------------
 
 	// define namespace
@@ -235,12 +214,34 @@ func getKevents(wg *sync.WaitGroup) {
 	defer wg.Done()
 }
 
-func main() {
-	finalJson["status"] = "running"
-	finalJson["error"] = "null"
-	var wg sync.WaitGroup
-	wg.Add(2)
-	go handleRequests(&wg)
-	go getKevents(&wg)
-	wg.Wait()
+func getDeployments() {
+	// add to import -> apiv1 "k8s.io/api/core/v1"
+
+	// kubeconfig related
+	// TODO - move to separate function
+	// --------------------------------------
+	// Use ~/.kube/config rather than in cluster configuration
+	// option 1 from getKubeconfig() DOESN'T care about 'runOutsideKcluster' !!
+	// option 2 from getKubeconfig() REQUIRES 'go run kubevents --run-outside-k-cluster 1'
+	runOutsideKcluster := flag.Bool("run-outside-k-cluster", false, "Set this flag when running outside of the cluster.")
+	flag.Parse()
+	// Create clientset to interact with the kubernetes cluster
+	clientset, err := getKubeconfig(*runOutsideKcluster)
+	if err != nil {
+		panic(err)
+	}
+	// --------------------------------------
+
+	// List Deployments
+	// https://github.com/kubernetes/client-go/blob/master/examples/create-update-delete-deployment/main.go
+	deploymentsClient := clientset.AppsV1().Deployments(apiv1.NamespaceDefault)
+	fmt.Printf("Listing deployments in namespace %q:\n", apiv1.NamespaceDefault)
+	list, err := deploymentsClient.List(metav1.ListOptions{})
+	if err != nil {
+		panic(err)
+	}
+	for _, d := range list.Items {
+		fmt.Printf(" * %s (%d replicas)\n", d.Name, *d.Spec.Replicas)
+	}
+
 }
