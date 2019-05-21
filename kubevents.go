@@ -32,10 +32,12 @@ type eventsData struct {
 }
 
 const (
-	ServicePort = ":5000"
-	apiVersion  = "/api/v1"
+	// it's better to get port from ENVs - getEnv()
+	// ServicePort = ":5000"
+	apiVersion = "/api/v1"
 )
 
+var ServicePort = getEnv("SERVICEPORT", ":5000")
 var countID int
 var finalJson = make(map[string]interface{})
 var datas []eventsData
@@ -49,6 +51,15 @@ func main() {
 	go handleRequests(&wg)
 	go getKevents(&wg)
 	wg.Wait()
+}
+
+// get 'key' environment variable if exist on HOST machine otherwise return defalutValue
+func getEnv(key, defaultValue string) string {
+	value := os.Getenv(key)
+	if len(value) == 0 {
+		return defaultValue
+	}
+	return value
 }
 
 func handleRequests(wg *sync.WaitGroup) {

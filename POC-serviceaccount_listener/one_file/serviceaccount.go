@@ -38,15 +38,15 @@ func getKevents() {
 	// --------------
 
 	// if empty string "" then "--all-namespaces"
-	initNamespace := ""
+	initNamespace := "default"
 
 	// init, clientset REQUIRED!
 	api := clientset.CoreV1()
 	listOptions := metav1.ListOptions{}
 
 	// Get all namespaces
-	// dupa, _ := clientset.Core().Namespaces().List(listOptions)
-	// for _, d := range dupa.Items {
+	// allns, _ := clientset.Core().Namespaces().List(listOptions)
+	// for _, d := range allns.Items {
 	// 	fmt.Printf("name: %s \n", d.Name)
 	// }
 
@@ -88,7 +88,7 @@ func getKevents() {
 			if strings.Contains(ke.Name, "-dev") {
 				setupRbac(clientset, ke.Name, ke.Namespace, "namespace-dev")
 			}
-			// TODO, move SA to 'namespace-dev' if role and binding created
+			// TODO (not so important), move SA to 'namespace-dev' if role and binding created
 			// api.ServiceAccounts(initNamespace).Update()
 
 		case watch.Deleted:
@@ -167,7 +167,7 @@ func setupRbac(kclient *kubernetes.Clientset, saName string, saNamespace string,
 	}
 	log.Printf("Role binding: %s, created in namespace: %s", roleBindName, namespaceName)
 
-	log.Printf("Service account added to namespace.")
+	log.Printf("Service account added to default namespace.")
 }
 
 func deleteRbac(kclient *kubernetes.Clientset, saName string, saNamespace string, namespaceName string) {
