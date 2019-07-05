@@ -1,5 +1,5 @@
-kind: Pod
 apiVersion: v1
+kind: Pod
 metadata:
   name: kubevents-pod
   labels:
@@ -12,3 +12,6 @@ spec:
     imagePullPolicy: Always
     ports:
     - containerPort: 5000
+    # env:
+    # - name: INITNAMESPACE
+    #   value: mynamespace

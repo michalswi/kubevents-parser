@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
@@ -20,6 +19,12 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 )
+
+// namespace "default"
+// go run kubevents.go --run-outside-k-cluster true
+
+// random namespace
+// go run kubevents.go --ns=mynamespace --run-outside-k-cluster true
 
 // https://github.com/kubernetes/client-go
 // https://medium.com/programming-kubernetes/building-stuff-with-the-kubernetes-api-part-4-using-go-b1d0e3c1c899
@@ -32,8 +37,6 @@ type eventsData struct {
 }
 
 const (
-	// it's better to get port from ENVs - getEnv()
-	// ServicePort = ":5000"
 	apiVersion = "/api/v1"
 )
 
@@ -41,11 +44,15 @@ var ServicePort = getEnv("SERVICEPORT", ":5000")
 var countID int
 var finalJson = make(map[string]interface{})
 var datas []eventsData
-var initNamespace = "default"
+var ns string
+var initNs = getEnv("INITNAMESPACE", "default")
 
 func main() {
+
+	// TODO
 	finalJson["status"] = "running"
 	finalJson["error"] = "null"
+	//
 	var wg sync.WaitGroup
 	wg.Add(2)
 	go handleRequests(&wg)
@@ -88,7 +95,7 @@ func passData(eName, eReason, eDiff string) {
 
 func getKubeconfig(runOutsideKcluster bool) (*kubernetes.Clientset, error) {
 
-	// // option 1 - TODO  - check if it works on k8s
+	// OPTION 1 - not in K8s
 	// var kubeconfig *string
 	// // if homeDir := homedir.HomeDir(); homeDir != "" {
 	// homeDir := homedir.HomeDir()
@@ -101,14 +108,12 @@ func getKubeconfig(runOutsideKcluster bool) (*kubernetes.Clientset, error) {
 	// flag.Parse()
 
 	// config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
-
 	// if err != nil {
 	// 	return nil, err
 	// }
-
 	// return kubernetes.NewForConfig(config)
 
-	// option 2 - it works on k8s
+	// OPTION 2 - works in K8s
 	kubeConfigLocation := ""
 
 	if runOutsideKcluster == true {
@@ -128,56 +133,29 @@ func getKubeconfig(runOutsideKcluster bool) (*kubernetes.Clientset, error) {
 
 func getKevents(wg *sync.WaitGroup) {
 	// add to import -> metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	// add to import -> apiv1 "k8s.io/api/core/v1"
 
 	t1 := time.Now()
 
-	// NOT NEEDED - moved to getKubeconfig() - instead I used 'kubeconfig related'
-	// --------------------------------------
-	// var kubeconfig *string
-	// if home := homedir.HomeDir(); home != "" {
-	// 	kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
-	// } else {
-	// 	kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
-	// }
-	// flag.Parse()
-	// config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// clientset, err := kubernetes.NewForConfig(config)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// --------------------------------------
-
-	// kubeconfig related
-	// TODO - move to separate function
-	// --------------------------------------
-	// Use ~/.kube/config rather than in cluster configuration
-	// option 1 from getKubeconfig() DOESN'T care about 'runOutsideKcluster' !!
-	// option 2 from getKubeconfig() REQUIRES 'go run kubevents --run-outside-k-cluster true'
+	flag.StringVar(&ns, "ns", initNs, "a namespace")
+	// flag.StringVar(&ns, "ns", "default", "a namespace")
 	runOutsideKcluster := flag.Bool("run-outside-k-cluster", false, "Set this flag when running outside of the cluster.")
 	flag.Parse()
+
+	finalJson["namespace"] = ns
+
 	// Create clientset to interact with the kubernetes cluster
 	clientset, err := getKubeconfig(*runOutsideKcluster)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
-	// print kubeconfig..
+	// Print kubeconfig
 	// fmt.Printf("%+v\n", clientset)
-	// --------------------------------------
 
-	// define namespace
-	var ns string
-	// if "--all-namespaces" then change "initNamespace" to empty string -> ""
-	flag.StringVar(&ns, "namespace", initNamespace, "a namespace")
-	flag.Parse()
-
-	// init, clientset REQUIRED!
 	api := clientset.CoreV1()
 	listOptions := metav1.ListOptions{}
 
-	// display all events at once
+	// Display all events at once
 	// getKevents := api.Events(ns)
 	// listevent, err := getKevents.List(listOptions)
 	// if err != nil {
@@ -189,9 +167,23 @@ func getKevents(wg *sync.WaitGroup) {
 	// 		d.Name, d.Namespace, d.Reason, d.Message)
 	// }
 
-	// enable watcher for events
+	// List Deployments
+	// https://github.com/kubernetes/client-go/blob/master/examples/create-update-delete-deployment/main.go
+	// deploymentsClient := clientset.AppsV1().Deployments(apiv1.NamespaceDefault)
+	// fmt.Printf("Listing deployments in namespace %q:\n", apiv1.NamespaceDefault)
+	// list, err := deploymentsClient.List(metav1.ListOptions{})
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// for _, d := range list.Items {
+	// 	fmt.Printf(" * %s (%d replicas)\n", d.Name, *d.Spec.Replicas)
+	// }
+
+	// Enable watcher for events
 	watcher, err := api.Events(ns).Watch(listOptions)
 	if err != nil {
+		log.Printf("Verify provided namespace: %s", ns)
+		// TODO, not really useful ouput: 'unknown (get events)'
 		log.Fatal(err)
 	}
 	ch := watcher.ResultChan()
@@ -223,36 +215,4 @@ func getKevents(wg *sync.WaitGroup) {
 		}
 	}
 	defer wg.Done()
-}
-
-func getDeployments() {
-	// add to import -> apiv1 "k8s.io/api/core/v1"
-
-	// kubeconfig related
-	// TODO - move to separate function
-	// --------------------------------------
-	// Use ~/.kube/config rather than in cluster configuration
-	// option 1 from getKubeconfig() DOESN'T care about 'runOutsideKcluster' !!
-	// option 2 from getKubeconfig() REQUIRES 'go run kubevents --run-outside-k-cluster 1'
-	runOutsideKcluster := flag.Bool("run-outside-k-cluster", false, "Set this flag when running outside of the cluster.")
-	flag.Parse()
-	// Create clientset to interact with the kubernetes cluster
-	clientset, err := getKubeconfig(*runOutsideKcluster)
-	if err != nil {
-		panic(err)
-	}
-	// --------------------------------------
-
-	// List Deployments
-	// https://github.com/kubernetes/client-go/blob/master/examples/create-update-delete-deployment/main.go
-	deploymentsClient := clientset.AppsV1().Deployments(apiv1.NamespaceDefault)
-	fmt.Printf("Listing deployments in namespace %q:\n", apiv1.NamespaceDefault)
-	list, err := deploymentsClient.List(metav1.ListOptions{})
-	if err != nil {
-		panic(err)
-	}
-	for _, d := range list.Items {
-		fmt.Printf(" * %s (%d replicas)\n", d.Name, *d.Spec.Replicas)
-	}
-
 }

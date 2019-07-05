@@ -17,30 +17,38 @@ import (
 	"k8s.io/client-go/util/homedir"
 )
 
+// namespace "default"
+// go run serviceaccount.go
+
+// random namespace
+// go run serviceaccount.go --ns=test2
+
 func getKevents() {
 	// add to import -> metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	// --------------
+
 	var kubeconfig *string
+	var ns string
+
+	flag.StringVar(&ns, "ns", "default", "a namespace")
+
 	if home := homedir.HomeDir(); home != "" {
 		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
 	} else {
 		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
 	}
+
 	flag.Parse()
+
 	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
 	if err != nil {
 		panic(err)
 	}
+
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		panic(err)
 	}
-	// --------------
 
-	// if empty string "" then "--all-namespaces"
-	initNamespace := "default"
-
-	// init, clientset REQUIRED!
 	api := clientset.CoreV1()
 	listOptions := metav1.ListOptions{}
 
@@ -50,27 +58,24 @@ func getKevents() {
 	// 	fmt.Printf("name: %s \n", d.Name)
 	// }
 
-	// define namespace
-	var ns string
-	flag.StringVar(&ns, "namespace", initNamespace, "a namespace")
-	flag.Parse()
-
-	// display list of serviceaccounts in specific namespace
-	// dispSA, err := api.ServiceAccounts(initNamespace).List(listOptions)
+	// Display list of serviceaccounts in specific namespace
+	// dispSA, err := api.ServiceAccounts(ns).List(listOptions)
 	// if err != nil {
 	// 	log.Fatal(err)
 	// }
-	// fmt.Printf("Initial data in namespace %s \n", initNamespace)
+	// fmt.Printf("Initial data in namespace %s \n", ns)
 	// for _, sa := range dispSA.Items {
 	// 	fmt.Printf("name: %s \n", sa.Name)
 	// }
 
-	// enable watcher for serviceaccounts
-	watcher, err := api.ServiceAccounts(initNamespace).Watch(listOptions)
+	// Enable watcher for serviceaccounts
+	watcher, err := api.ServiceAccounts(ns).Watch(listOptions)
 	if err != nil {
 		log.Fatal(err)
 	}
 	ch := watcher.ResultChan()
+
+	log.Printf("Watching namespace: %s\n", ns)
 
 	for event := range ch {
 		ke, ok := event.Object.(*v1.ServiceAccount)

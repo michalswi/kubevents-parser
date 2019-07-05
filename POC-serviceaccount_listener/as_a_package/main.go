@@ -11,7 +11,11 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+// namespace "default"
 // go run main.go --run-outside-k-cluster true
+
+// random namespace
+// go run main.go --ns=kube-system --run-outside-k-cluster true
 
 func newClientSet(runOutsideKcluster bool) (*kubernetes.Clientset, error) {
 
@@ -34,15 +38,18 @@ func newClientSet(runOutsideKcluster bool) (*kubernetes.Clientset, error) {
 
 func main() {
 
-	log.SetOutput(os.Stdout)
+	// namespace
+	var ns string
+	flag.StringVar(&ns, "ns", "default", "Set this flag when changing default namespace.")
 
+	// cloudconfig
 	runOutsideKcluster := flag.Bool("run-outside-k-cluster", false, "Set this flag when running outside of the cluster.")
 	flag.Parse()
 
 	clientset, err := newClientSet(*runOutsideKcluster)
 	if err != nil {
-		panic(err.Error())
+		log.Fatal(err)
 	}
 
-	controller.GetKevents(clientset)
+	controller.GetKevents(clientset, ns)
 }

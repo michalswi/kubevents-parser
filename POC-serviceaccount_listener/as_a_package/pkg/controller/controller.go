@@ -4,7 +4,6 @@ import (
 
 	// "k8s.io/api/core/v1"
 
-	"flag"
 	"fmt"
 	"log"
 	"strings"
@@ -15,32 +14,25 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func GetKevents(kclient *kubernetes.Clientset) {
-	clientset := kclient
-	initNamespace := "default"
+func GetKevents(kclient *kubernetes.Clientset, ns string) {
 
-	// clientset REQUIRED !
+	clientset := kclient
+
 	api := clientset.CoreV1()
 	listOptions := metav1.ListOptions{}
 
-	// define namespace
-	var ns string
-	// if "--all-namespaces" then change "initNamespace" to empty string -> ""
-	flag.StringVar(&ns, "namespace", initNamespace, "a namespace")
-	flag.Parse()
-
-	// display list of serviceaccounts in specific namespace
-	dispSA, err := api.ServiceAccounts(initNamespace).List(listOptions)
+	// Display list of serviceaccounts in specific namespace
+	dispSA, err := api.ServiceAccounts(ns).List(listOptions)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("Initial data in namespace %s \n", initNamespace)
+	fmt.Printf("Initial data in namespace: %s \n", ns)
 	for _, dispSA := range dispSA.Items {
 		fmt.Printf("name: %s \n", dispSA.Name)
 	}
 
-	// enable watcher for serviceaccounts
-	watcher, err := api.ServiceAccounts(initNamespace).Watch(listOptions)
+	// Enable watcher for serviceaccounts
+	watcher, err := api.ServiceAccounts(ns).Watch(listOptions)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -18,7 +18,7 @@ import (
 
 func getKevents() {
 	// add to import -> metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	// --------------
+
 	var kubeconfig *string
 	if home := homedir.HomeDir(); home != "" {
 		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
@@ -34,13 +34,11 @@ func getKevents() {
 	if err != nil {
 		panic(err)
 	}
-	// --------------
 
-	// init, clientset REQUIRED!
 	api := clientset.CoreV1()
 	listOptions := metav1.ListOptions{}
 
-	// // display list of nodes
+	// Display list of nodes
 	// dispNode, err := api.Nodes().List(listOptions)
 	// if err != nil {
 	// 	log.Fatal(err)
@@ -53,7 +51,7 @@ func getKevents() {
 	// metrics
 	// https://github.com/kubernetes/kubernetes/tree/master/staging/src/k8s.io/metrics
 
-	// enable watcher
+	// Enable watcher
 	watcher, err := api.Nodes().Watch(listOptions)
 	if err != nil {
 		log.Fatal(err)
