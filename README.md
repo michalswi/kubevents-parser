@@ -5,10 +5,7 @@ You can run it either on k8s or locally.
 
 #### Prerequisites
 ```sh
-$ go get github.com/gorilla/mux
-$ go get k8s.io/api/...
-$ go get k8s.io/client-go/...
-$ go get k8s.io/apimachinery/...
+[optional] $ go get k8s.io/client-go@master
 
 $ go build -a -ldflags '-w -s' -installsuffix cgo -o kubevents kubevents.go
 $ docker build -t local/kubevents:0.0.1 .
@@ -33,8 +30,7 @@ If you don't provide `-n <initnamespace>` you want have access to provided names
 ```sh
 # default namespace
 $ ./kubevents --run-outside-k-cluster true
-Start..
-2018/12/17 19:44:49 Event added, name: hello-app-5c7477d7b7-94brw.1571326091adb1c9, reason: Scheduled, timestamp: 2018-12-17 19:32:17 +0100 CET
+Kubevents 2020/01/10 12:22:11 kubevents.go:67: Starting server on port :5000
 
 # random namespace
 $ ./kubevents --ns=mynamespace --run-outside-k-cluster true

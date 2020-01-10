@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -20,15 +19,6 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-// namespace "default"
-// go run kubevents.go --run-outside-k-cluster true
-
-// random namespace
-// go run kubevents.go --ns=mynamespace --run-outside-k-cluster true
-
-// https://github.com/kubernetes/client-go
-// https://medium.com/programming-kubernetes/building-stuff-with-the-kubernetes-api-part-4-using-go-b1d0e3c1c899
-
 type eventsData struct {
 	ID        int    `json:"id"`
 	Name      string `json:"name"`
@@ -40,7 +30,7 @@ const (
 	apiVersion = "/api/v1"
 )
 
-var ServicePort = getEnv("SERVICEPORT", ":5000")
+var servicePort = getEnv("SERVICEPORT", ":5000")
 var countID int
 var finalJson = make(map[string]interface{})
 var datas []eventsData
@@ -70,11 +60,16 @@ func getEnv(key, defaultValue string) string {
 }
 
 func handleRequests(wg *sync.WaitGroup) {
+	logger := log.New(os.Stdout, "Kubevents ", log.LstdFlags|log.Lshortfile)
 	r := mux.NewRouter()
 	myRouter := r.PathPrefix(apiVersion).Subrouter()
 	myRouter.Path("/log").HandlerFunc(jsonToweb)
-	fmt.Println("Start..")
-	log.Fatal(http.ListenAndServe(ServicePort, myRouter))
+	logger.Printf("Starting server on port %s", servicePort)
+	err := http.ListenAndServe(servicePort, myRouter)
+	if err != nil {
+		logger.Fatalf("Server failed to start: %v\n", err)
+	}
+	logger.Printf("Server stopped\n")
 	defer wg.Done()
 }
 
@@ -138,7 +133,6 @@ func getKevents(wg *sync.WaitGroup) {
 	t1 := time.Now()
 
 	flag.StringVar(&ns, "ns", initNs, "a namespace")
-	// flag.StringVar(&ns, "ns", "default", "a namespace")
 	runOutsideKcluster := flag.Bool("run-outside-k-cluster", false, "Set this flag when running outside of the cluster.")
 	flag.Parse()
 
@@ -188,7 +182,6 @@ func getKevents(wg *sync.WaitGroup) {
 	}
 	ch := watcher.ResultChan()
 
-	// https://github.com/vladimirvivien/k8s-client-examples/blob/master/go/pvcwatch/main.go#L65
 	for event := range ch {
 		// add to import -> v1 "k8s.io/api/core/v1"
 		ke, ok := event.Object.(*v1.Event)
