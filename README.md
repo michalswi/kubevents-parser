@@ -4,11 +4,9 @@
 You can run it either on k8s or locally.
 
 #### Prerequisites
-```sh
-[optional] $ go get k8s.io/client-go@master
-
-$ go build -a -ldflags '-w -s' -installsuffix cgo -o kubevents kubevents.go
-$ docker build -t local/kubevents:0.0.1 .
+```
+go build -a -ldflags '-w -s' -installsuffix cgo -o .
+docker build -t local/kubevents:0.0.1 .
 ```
 
 #### Run on kubernetes cluster
@@ -29,11 +27,11 @@ If you don't provide `-n <initnamespace>` you want have access to provided names
 #### Run locally
 ```sh
 # default namespace
-$ ./kubevents --run-outside-k-cluster true
-Kubevents 2020/01/10 12:22:11 kubevents.go:67: Starting server on port :5000
+$ ./kubevents-parser --run-outside-k-cluster true
+Kubevents 2021/07/16 09:44:39 kubevents.go:68: Starting server on port :5000
 
-# random namespace
-$ ./kubevents --ns=mynamespace --run-outside-k-cluster true
+# any namespace
+$ ./kubevents-parser --ns=mynamespace --run-outside-k-cluster true
 ```
 
 #### Check locally

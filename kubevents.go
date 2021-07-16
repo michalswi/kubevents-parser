@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"log"
@@ -151,7 +152,7 @@ func getKevents(wg *sync.WaitGroup) {
 
 	// Display all events at once
 	// getKevents := api.Events(ns)
-	// listevent, err := getKevents.List(listOptions)
+	// listevent, err := getKevents.List(context.TODO(), listOptions)
 	// if err != nil {
 	// 	panic(err)
 	// }
@@ -165,7 +166,7 @@ func getKevents(wg *sync.WaitGroup) {
 	// https://github.com/kubernetes/client-go/blob/master/examples/create-update-delete-deployment/main.go
 	// deploymentsClient := clientset.AppsV1().Deployments(apiv1.NamespaceDefault)
 	// fmt.Printf("Listing deployments in namespace %q:\n", apiv1.NamespaceDefault)
-	// list, err := deploymentsClient.List(metav1.ListOptions{})
+	// list, err := deploymentsClient.List(context.TODO(), metav1.ListOptions{})
 	// if err != nil {
 	// 	log.Fatal(err)
 	// }
@@ -174,7 +175,7 @@ func getKevents(wg *sync.WaitGroup) {
 	// }
 
 	// Enable watcher for events
-	watcher, err := api.Events(ns).Watch(listOptions)
+	watcher, err := api.Events(ns).Watch(context.TODO(), listOptions)
 	if err != nil {
 		log.Printf("Verify provided namespace: %s", ns)
 		// TODO, not really useful ouput: 'unknown (get events)'
