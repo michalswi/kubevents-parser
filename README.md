@@ -1,4 +1,3 @@
-
 ### Simple web server to monitor K8s events 
 
 You can run it either on k8s or locally.
@@ -46,7 +45,7 @@ $ curl localhost:5000/api/v1/log | jq
 }
 
 # run some app
-$ kubectl run hello-app --image=nginxdemos/hello --port=80 --replicas=1
+$ kubectl run hello-app --image=nginxdemos/hello --port=80
 
 # check
 $ curl localhost:5000/api/v1/log | jq
@@ -71,5 +70,5 @@ $ curl localhost:5000/api/v1/log | jq
   "status": "running"
 }
 
-$ kubectl delete deployments hello-app
+$ kubectl delete pod hello-app
 ```

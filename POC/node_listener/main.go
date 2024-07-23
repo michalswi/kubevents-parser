@@ -1,11 +1,12 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log"
 	"path/filepath"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 
@@ -52,7 +53,7 @@ func getKevents() {
 	// https://github.com/kubernetes/kubernetes/tree/master/staging/src/k8s.io/metrics
 
 	// Enable watcher
-	watcher, err := api.Nodes().Watch(listOptions)
+	watcher, err := api.Nodes().Watch(context.TODO(), listOptions)
 	if err != nil {
 		log.Fatal(err)
 	}

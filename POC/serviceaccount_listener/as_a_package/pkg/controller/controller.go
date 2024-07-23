@@ -4,11 +4,12 @@ import (
 
 	// "k8s.io/api/core/v1"
 
+	"context"
 	"fmt"
 	"log"
 	"strings"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
@@ -22,7 +23,7 @@ func GetKevents(kclient *kubernetes.Clientset, ns string) {
 	listOptions := metav1.ListOptions{}
 
 	// Display list of serviceaccounts in specific namespace
-	dispSA, err := api.ServiceAccounts(ns).List(listOptions)
+	dispSA, err := api.ServiceAccounts(ns).List(context.TODO(), listOptions)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -32,7 +33,7 @@ func GetKevents(kclient *kubernetes.Clientset, ns string) {
 	}
 
 	// Enable watcher for serviceaccounts
-	watcher, err := api.ServiceAccounts(ns).Watch(listOptions)
+	watcher, err := api.ServiceAccounts(ns).Watch(context.TODO(), listOptions)
 	if err != nil {
 		log.Fatal(err)
 	}

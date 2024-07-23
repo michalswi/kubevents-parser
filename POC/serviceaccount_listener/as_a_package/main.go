@@ -6,16 +6,18 @@ import (
 	"os"
 	"path/filepath"
 
-	"./pkg/controller"
+	"github.com/michalswi/kubevents-parser/POC/serviceaccount_listener/as_a_package/pkg/controller"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-// namespace "default"
-// go run main.go --run-outside-k-cluster true
+/*
+> namespace "default"
+go run main.go --run-outside-k-cluster true
 
-// random namespace
-// go run main.go --ns=kube-system --run-outside-k-cluster true
+> random namespace
+go run main.go --ns=kube-system --run-outside-k-cluster true
+*/
 
 func newClientSet(runOutsideKcluster bool) (*kubernetes.Clientset, error) {
 

@@ -1,13 +1,14 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
 	"path/filepath"
 	"strings"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
@@ -17,11 +18,16 @@ import (
 	"k8s.io/client-go/util/homedir"
 )
 
-// namespace "default"
-// go run serviceaccount.go
+/*
+> namespace "default"
+go run main.go
 
-// random namespace
-// go run serviceaccount.go --ns=test2
+> random namespace
+go run main.go --ns=test2
+
+kubectl create serviceaccount my-service-account
+kubectl delete serviceaccount my-service-account
+*/
 
 func getKevents() {
 	// add to import -> metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -69,7 +75,7 @@ func getKevents() {
 	// }
 
 	// Enable watcher for serviceaccounts
-	watcher, err := api.ServiceAccounts(ns).Watch(listOptions)
+	watcher, err := api.ServiceAccounts(ns).Watch(context.TODO(), listOptions)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -137,7 +143,7 @@ func setupRbac(kclient *kubernetes.Clientset, saName string, saNamespace string,
 		},
 	}
 
-	if _, err := clientset.RbacV1().Roles(namespaceName).Create(role); err != nil {
+	if _, err := clientset.RbacV1().Roles(namespaceName).Create(context.TODO(), role, metav1.CreateOptions{}); err != nil {
 		log.Printf("Can't create role: %s, in namespace: %s", roleName, namespaceName)
 		return
 	}
@@ -166,7 +172,7 @@ func setupRbac(kclient *kubernetes.Clientset, saName string, saNamespace string,
 		},
 	}
 
-	if _, err := clientset.RbacV1().RoleBindings(namespaceName).Create(roleBinding); err != nil {
+	if _, err := clientset.RbacV1().RoleBindings(namespaceName).Create(context.TODO(), roleBinding, metav1.CreateOptions{}); err != nil {
 		log.Printf("Can't create role binding: %s, in namespace: %s", roleBindName, namespaceName)
 		return
 	}
@@ -181,14 +187,14 @@ func deleteRbac(kclient *kubernetes.Clientset, saName string, saNamespace string
 	roleName := fmt.Sprintf("%s-r", saName)
 	roleBindName := fmt.Sprintf("%s-rb", saName)
 
-	err := clientset.RbacV1().Roles(namespaceName).Delete(roleName, &metav1.DeleteOptions{})
+	err := clientset.RbacV1().Roles(namespaceName).Delete(context.TODO(), roleName, metav1.DeleteOptions{})
 	if err != nil {
 		log.Printf("Can't delete role: %s, from namespace: %s", roleName, namespaceName)
 	}
 	log.Printf("Role: %s, deleted from namespace: %s", roleName, namespaceName)
 
 	// if err := clientset.RbacV1().RoleBindings(namespaceName).Delete(roleBindName, &metav1.DeleteOptions{}); err != nil {
-	err = clientset.RbacV1().RoleBindings(namespaceName).Delete(roleBindName, &metav1.DeleteOptions{})
+	err = clientset.RbacV1().RoleBindings(namespaceName).Delete(context.TODO(), roleBindName, metav1.DeleteOptions{})
 	if err != nil {
 		log.Printf("Can't delete role binding: %s, from namespace: %s", roleBindName, namespaceName)
 	}
